@@ -2,14 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-// GitHub Pages serves this as a project site (github.io/Mcbedrockaddon/),
-// not from the domain root, so every asset path needs that prefix when
-// built in CI. Local dev and other static hosts (Vercel/Netlify/Cloudflare
-// Pages) serve from "/", so only flip this under GitHub Actions.
-const base = process.env.GITHUB_ACTIONS ? "/Mcbedrockaddon/" : "/";
-
 export default defineConfig({
-  base,
   plugins: [
     react(),
     VitePWA({
@@ -23,8 +16,8 @@ export default defineConfig({
         background_color: "#1c1f26",
         display: "standalone",
         orientation: "portrait",
-        start_url: base,
-        scope: base,
+        start_url: "/",
+        scope: "/",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png" },

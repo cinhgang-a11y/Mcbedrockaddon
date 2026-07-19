@@ -80,12 +80,24 @@ client/   Vite + React + TypeScript PWA — tabs for Add-ons/Maps, search, card 
 
 ## Deploying
 
-- **server/**: any Node host works (Render, Railway, Fly.io, a small VPS...). Set
-  `CURSEFORGE_API_KEY` and `CLIENT_ORIGIN` (your deployed client's URL) as environment
-  variables. Node 18+ required (uses the built-in `fetch`).
-- **client/**: `npm run build` produces a static `dist/` folder — deploy it to Vercel,
-  Netlify, Cloudflare Pages, or any static host. Set `VITE_API_BASE` at build time to
-  your deployed server's URL (defaults to `http://localhost:8787`).
+**client/ → Vercel** (recommended; free tier, no public/private repo restriction, works
+straight from a private GitHub repo, unlike GitHub Pages):
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repo.
+2. Set **Root Directory** to `client`. Vercel auto-detects the Vite build command and
+   `dist` output — no extra config needed (a `client/vercel.json` is included for the
+   SPA rewrite so refreshing a deep link like `/addons/123` doesn't 404).
+3. Add an environment variable `VITE_API_BASE` pointing at wherever you deploy the
+   server (below). You can leave it unset for now and redeploy once the server is up.
+4. Deploy. Vercel gives you a `https://<project>.vercel.app` URL — open that on your
+   phone and "Add to Home Screen."
+
+Netlify works the same way (import repo, base directory `client`, build command
+`npm run build`, publish directory `dist`) if you'd rather use that instead.
+
+**server/**: any Node host works (Render, Railway, Fly.io, a small VPS...). Set
+`CURSEFORGE_API_KEY` and `CLIENT_ORIGIN` (your Vercel client URL) as environment
+variables. Node 18+ required (uses the built-in `fetch`).
 
 ## Known limitations
 
