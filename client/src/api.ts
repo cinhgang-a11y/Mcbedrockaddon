@@ -1,28 +1,53 @@
 import type { FilesResponse, HealthResponse, Section, SearchResponse } from "./types";
+import { getStoredKey } from "./keyStore";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8787";
 
 class ApiError extends Error {
   status: number;
-  configured: boolean;
-  constructor(message: string, status: number, configured: boolean) {
+  unconfigured: boolean;
+  invalidKey: boolean;
+  constructor(message: string, status: number, unconfigured: boolean, invalidKey: boolean) {
     super(message);
     this.status = status;
-    this.configured = configured;
+    this.unconfigured = unconfigured;
+    this.invalidKey = invalidKey;
   }
 }
 
 async function request<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
+  const storedKey = getStoredKey();
+  const headers: HeadersInit = storedKey ? { "x-curseforge-key": storedKey } : {};
+  const res = await fetch(`${API_BASE}${path}`, { headers });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(body.error || res.statusText, res.status, Boolean(body.configured));
+    throw new ApiError(
+      body.error || res.statusText,
+      res.status,
+      Boolean(body.unconfigured),
+      Boolean(body.invalidKey)
+    );
   }
   return body as T;
 }
 
 export function getHealth() {
   return request<HealthResponse>("/api/health");
+}
+
+// Confirms a key actually works against CurseForge before we save it, so the
+// Settings screen can give an immediate yes/no instead of silently storing a
+// key that later fails.
+export async function validateKey(key: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/validate-key`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(body.error || res.statusText, res.status, false, true);
+  }
 }
 
 export function searchMods(section: Section, query: string, index = 0, pageSize = 20) {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError, getHealth, searchMods } from "../api";
 import { CategoryTabs } from "../components/CategoryTabs";
 import { SearchBar } from "../components/SearchBar";
 import { AddonCard } from "../components/AddonCard";
-import { EmptyState } from "../components/EmptyState";
 import { PlanetMinecraftLink } from "../components/PlanetMinecraftLink";
+import { getStoredKey } from "../keyStore";
 import type { CfMod, Section } from "../types";
 
 export function Home() {
@@ -14,8 +15,13 @@ export function Home() {
   const [mods, setMods] = useState<CfMod[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidKey, setInvalidKey] = useState(false);
 
   useEffect(() => {
+    if (getStoredKey()) {
+      setConfigured(true);
+      return;
+    }
     getHealth()
       .then((h) => setConfigured(h.curseforgeConfigured))
       .catch(() => setConfigured(false));
@@ -25,10 +31,17 @@ export function Home() {
     if (!configured) return;
     setLoading(true);
     setError(null);
+    setInvalidKey(false);
     const handle = setTimeout(() => {
       searchMods(section, query)
         .then((res) => setMods(res.data))
-        .catch((err) => setError(err instanceof ApiError ? err.message : "Something went wrong."))
+        .catch((err) => {
+          if (err instanceof ApiError && err.invalidKey) {
+            setInvalidKey(true);
+          } else {
+            setError(err instanceof ApiError ? err.message : "Something went wrong.");
+          }
+        })
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(handle);
@@ -39,7 +52,30 @@ export function Home() {
   }
 
   if (!configured) {
-    return <EmptyState />;
+    return (
+      <div className="empty-state">
+        <h2>Add your CurseForge API key to get started</h2>
+        <p>
+          This app browses real Minecraft Bedrock add-ons and maps through CurseForge's
+          official API, which needs a free key of your own.
+        </p>
+        <Link to="/settings" className="download-btn">
+          Add your key
+        </Link>
+      </div>
+    );
+  }
+
+  if (invalidKey) {
+    return (
+      <div className="empty-state">
+        <h2>This CurseForge key isn't working</h2>
+        <p>CurseForge rejected the saved key. Update it and try again.</p>
+        <Link to="/settings" className="download-btn">
+          Update key
+        </Link>
+      </div>
+    );
   }
 
   return (

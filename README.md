@@ -25,13 +25,18 @@ a real app — it's a Progressive Web App (PWA), so there's no app store review 
 
 1. Go to [console.curseforge.com](https://console.curseforge.com/) and sign up.
 2. Create an API key under "API Keys".
-3. Copy `server/.env.example` to `server/.env` and paste your key in:
-   ```
-   CURSEFORGE_API_KEY=your-key-here
-   ```
+3. Paste it into the app itself: tap the ⚙ icon in the header (or the "Add your key"
+   prompt on first launch), paste the key, and hit Save. The app checks it against
+   CurseForge immediately and tells you right away if it's wrong.
 
-Until you do this, the app runs fine and shows a friendly "add your API key" screen
-instead of results — it's not broken, it's just waiting for a key.
+The key is saved only in your browser's local storage and sent straight to this app's
+own server proxy on each request — it's never written to a file, committed, or shared
+anywhere else. Because of that, one deployment works for anyone who opens it and adds
+their own key, with no redeploying or environment variables to touch.
+
+Running the server with `CURSEFORGE_API_KEY` set in `server/.env` still works too (handy
+for local development) — a key saved in the browser always takes priority over it, so
+you can mix both without conflict.
 
 ## Running locally
 
