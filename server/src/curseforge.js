@@ -1,10 +1,14 @@
 const CF_BASE = "https://api.curseforge.com/v1";
-const MINECRAFT_GAME_ID = 432;
 
-// CurseForge doesn't expose stable, documented numeric class IDs for the
-// Bedrock sections, and they can differ between accounts/regions, so instead
-// of hardcoding numbers we look them up once (per process) from the live
-// /categories endpoint and cache the result.
+// CurseForge lists "Minecraft Bedrock" as its own game (id 78022), separate
+// from "Minecraft" (id 432, which is the Java Edition catalog). Bedrock
+// add-ons/maps/skins live only under 78022.
+const BEDROCK_GAME_ID = 78022;
+
+// CurseForge doesn't publish stable, documented numeric class IDs for these
+// top-level sections (Addons/Maps/Skins/...), so instead of hardcoding
+// numbers we look them up once (per process) from the live /categories
+// endpoint and cache the result.
 let categoryCache = null;
 let categoryCacheAt = 0;
 const CATEGORY_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -51,30 +55,29 @@ async function cfFetch(path, searchParams = {}) {
   return res.json();
 }
 
-// Finds the top-level Minecraft categories (classId === null) whose name
-// mentions "Bedrock", then buckets them by keyword so the app can filter
-// search results to real Bedrock add-ons vs. maps vs. everything else.
+// Finds the top-level classes under the Minecraft Bedrock game (Addons,
+// Maps, Skins, Texture Packs, ...) so the app can filter search results to
+// each section. Top-level classes are marked `isClass: true` in CurseForge's
+// response, with no `classId` of their own (everything else nests under one
+// via `classId`/`parentCategoryId`).
 async function resolveBedrockCategories() {
   const now = Date.now();
   if (categoryCache && now - categoryCacheAt < CATEGORY_CACHE_TTL_MS) {
     return categoryCache;
   }
 
-  const json = await cfFetch("/categories", { gameId: MINECRAFT_GAME_ID });
+  const json = await cfFetch("/categories", { gameId: BEDROCK_GAME_ID });
   const categories = json.data || [];
-  const bedrockTopLevel = categories.filter(
-    (c) => (c.classId === null || c.classId === undefined) && /bedrock/i.test(c.name)
-  );
+  const topLevel = categories.filter((c) => c.isClass);
 
-  const findBy = (patterns) =>
-    bedrockTopLevel.find((c) => patterns.every((p) => p.test(c.name))) || null;
+  const findBy = (pattern) => topLevel.find((c) => pattern.test(c.name)) || null;
 
   const resolved = {
-    addons: findBy([/bedrock/i, /add-?ons?/i]),
-    maps: findBy([/bedrock/i, /maps?/i]),
-    skins: findBy([/bedrock/i, /skins?/i]),
-    textures: findBy([/bedrock/i, /(texture|resource)/i]),
-    all: bedrockTopLevel,
+    addons: findBy(/^add-?ons?$/i),
+    maps: findBy(/^maps?$/i),
+    skins: findBy(/^skins?$/i),
+    textures: findBy(/texture/i),
+    all: topLevel,
   };
 
   categoryCache = resolved;
@@ -102,7 +105,7 @@ async function searchMods({ section, query, index = 0, pageSize = 20, sort = "po
   }
 
   const json = await cfFetch("/mods/search", {
-    gameId: MINECRAFT_GAME_ID,
+    gameId: BEDROCK_GAME_ID,
     classId: bucket.id,
     searchFilter: query,
     index,
@@ -129,4 +132,4 @@ async function getModFiles(modId, { index = 0, pageSize = 20 } = {}) {
   return json;
 }
 
-export { CurseForgeError, resolveBedrockCategories, searchMods, getMod, getModDescription, getModFiles, MINECRAFT_GAME_ID };
+export { CurseForgeError, resolveBedrockCategories, searchMods, getMod, getModDescription, getModFiles };
