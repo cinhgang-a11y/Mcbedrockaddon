@@ -4,7 +4,7 @@ import { ApiError, getHealth, searchMods } from "../api";
 import { CategoryTabs } from "../components/CategoryTabs";
 import { SearchBar } from "../components/SearchBar";
 import { AddonCard } from "../components/AddonCard";
-import { PlanetMinecraftLink } from "../components/PlanetMinecraftLink";
+import { ExternalSourceLinks } from "../components/ExternalSourceLinks";
 import { getStoredKey } from "../keyStore";
 import type { CfMod, Section } from "../types";
 
@@ -100,7 +100,7 @@ export function Home() {
         ))}
       </div>
 
-      <PlanetMinecraftLink section={section} query={query} />
+      <ExternalSourceLinks section={section} query={query} />
     </div>
   );
 }

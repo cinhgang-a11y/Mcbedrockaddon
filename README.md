@@ -13,18 +13,27 @@ Vercel) → [bedrock-hub-server.onrender.com](https://bedrock-hub-server.onrende
 proxy, on Render's free tier — the first request after it's been idle a while can take
 ~30s to wake up).
 
-## Why CurseForge, and not Modrinth or Planet Minecraft?
+## Why CurseForge, and not Modrinth / Planet Minecraft / MCPEDL / ModBay / MCPE Addons?
 
 - **Modrinth** has a great public API, but it is Java Edition only — there is no
   `bedrock` loader or project type on the platform at all. Anything it returned for a
   "Bedrock" search would actually be Java mods, which Bedrock can't run. Using it here
   would be actively misleading, so it's intentionally left out.
-- **Planet Minecraft** has real Bedrock/PE content but no public API. Scraping it would
-  violate their terms of service, so instead of fake "browsing," the app links out to a
-  pre-filled search on their site.
-- **CurseForge** has genuine Bedrock add-ons and maps behind a real, official API. It's
-  the only viable source for real in-app search, detail pages, and one-tap downloads —
-  which is why the whole app is built around it.
+- **Planet Minecraft** has real Bedrock/PE content but no public API at all.
+- **MCPEDL** has an internal API that powers its own site, but it isn't a published
+  developer program, and its Terms of Use explicitly prohibit exactly this kind of use:
+  redistributing site content, or "sidestep[ping] the regular interfaces" to its data.
+- **ModBay** has no API, and its Terms of Use directly ban using the site "to build a
+  similar or competitive website."
+- **MCPE Addons** exposes WordPress's default `/wp-json/` endpoint, but that's not an
+  intentional developer API either, and its Terms of Use ban all automated/bot access
+  and republishing content elsewhere.
+
+None of the above are things this app works around — CurseForge is the only one of
+these sites with an actual self-serve developer program and a Terms of Service that
+allows it, which is exactly why the whole app is built around it. The others appear
+only as "search on their site" link-outs (see `ExternalSourceLinks.tsx`), which just
+sends users there rather than reusing their content.
 
 ## Get a CurseForge API key (free, ~2 minutes)
 
