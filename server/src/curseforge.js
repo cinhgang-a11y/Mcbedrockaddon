@@ -159,6 +159,36 @@ async function getModFiles(modId, { index = 0, pageSize = 20, requestKey } = {})
   return json;
 }
 
+// CurseForge's CDN (edge.forgecdn.net) started requiring the x-api-key
+// header on the file request itself, not just on the metadata API calls —
+// something a plain <a href> download link can never send, since browsers
+// don't let links attach custom headers. So instead of linking the browser
+// straight at edge.forgecdn.net, the client links here: we make the
+// authenticated request server-side and hand back the 302's Location, which
+// points at mediafilez.forgecdn.net — a genuinely public URL the browser can
+// then download directly (no further auth, no proxying gigabytes of file
+// bytes through this server).
+async function resolveDownloadUrl(edgeUrl, requestKey) {
+  const key = resolveKey(requestKey);
+  if (!key) {
+    throw new CurseForgeError("No CurseForge API key was provided.", 401, { unconfigured: true });
+  }
+
+  const res = await fetch(edgeUrl, {
+    headers: { "x-api-key": key },
+    redirect: "manual",
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new CurseForgeError("CurseForge rejected this API key.", res.status, { invalidKey: true });
+  }
+  const location = res.headers.get("location");
+  if (!(res.status >= 300 && res.status < 400) || !location) {
+    throw new CurseForgeError(`Unexpected response resolving download (${res.status}).`, 502);
+  }
+  return location;
+}
+
 export {
   CurseForgeError,
   resolveBedrockCategories,
@@ -167,4 +197,5 @@ export {
   getModDescription,
   getModFiles,
   validateKey,
+  resolveDownloadUrl,
 };

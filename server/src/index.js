@@ -10,6 +10,7 @@ import {
   getModDescription,
   getModFiles,
   validateKey,
+  resolveDownloadUrl,
 } from "./curseforge.js";
 
 const app = express();
@@ -22,13 +23,22 @@ app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 
 // A visitor's own CurseForge key, saved in their browser, is sent per-request
-// via this header. It always takes priority over the server's own env key
-// (see curseforge.js `resolveKey`), so one deployment works for anyone who's
-// added their own key in the app, with or without a server-side key set.
+// via this header on fetch() calls. It always takes priority over the
+// server's own env key (see curseforge.js `resolveKey`), so one deployment
+// works for anyone who's added their own key in the app. The download route
+// is a plain browser navigation (a clicked link), which can't carry a custom
+// header, so it falls back to a `key` query param there instead.
 function requestKey(req) {
   const header = req.header("x-curseforge-key");
-  return header ? header.trim() : undefined;
+  if (header) return header.trim();
+  if (typeof req.query.key === "string" && req.query.key) return req.query.key;
+  return undefined;
 }
+
+// Only ever fetch from CurseForge's own CDN host here — this endpoint takes
+// a URL from the client and fetches it server-side, so without this check
+// it'd be an open redirector/SSRF proxy for arbitrary URLs.
+const ALLOWED_DOWNLOAD_HOSTS = new Set(["edge.forgecdn.net", "mediafilez.forgecdn.net"]);
 
 function handleErrors(fn) {
   return async (req, res) => {
@@ -118,6 +128,27 @@ app.get(
       requestKey: requestKey(req),
     });
     res.json(files);
+  })
+);
+
+app.get(
+  "/api/download",
+  handleErrors(async (req, res) => {
+    const { url } = req.query;
+    if (typeof url !== "string") {
+      return res.status(400).json({ error: "Missing url" });
+    }
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return res.status(400).json({ error: "Invalid url" });
+    }
+    if (parsed.protocol !== "https:" || !ALLOWED_DOWNLOAD_HOSTS.has(parsed.hostname)) {
+      return res.status(400).json({ error: "Unsupported download host" });
+    }
+    const resolved = await resolveDownloadUrl(url, requestKey(req));
+    res.redirect(302, resolved);
   })
 );
 

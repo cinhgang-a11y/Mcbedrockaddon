@@ -2,6 +2,7 @@ import type { FilesResponse, HealthResponse, Section, SearchResponse } from "./t
 import { getStoredKey } from "./keyStore";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8787";
+export { API_BASE };
 
 class ApiError extends Error {
   status: number;
