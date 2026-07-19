@@ -8,6 +8,11 @@ in your phone's browser already works today.
 Install it to your home screen (Safari/Chrome "Add to Home Screen") and it behaves like
 a real app — it's a Progressive Web App (PWA), so there's no app store review to wait on.
 
+**Live:** [bedrock-hub-livid.vercel.app](https://bedrock-hub-livid.vercel.app) (client, on
+Vercel) → [bedrock-hub-server.onrender.com](https://bedrock-hub-server.onrender.com) (API
+proxy, on Render's free tier — the first request after it's been idle a while can take
+~30s to wake up).
+
 ## Why CurseForge, and not Modrinth or Planet Minecraft?
 
 - **Modrinth** has a great public API, but it is Java Edition only — there is no
